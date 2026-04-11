@@ -220,3 +220,287 @@ JOIN [Order Details] od ON p.ProductID = od.ProductID
 GROUP BY p.ProductID, p.ProductName
 ORDER BY CountOfOrders DESC;
 
+--TUẦN 8 (3 TIẾT)
+--BÀI TẬP 4: LỆNH SELECT – TRUY VẤN LỒNG NHAU
+--1.  Liệt kê  các product  có đơn giá  mua  lớn hơn đơn giá  mua  trung bình  của 
+--tất cả các product.
+SELECT 
+	p.ProductID, 
+	p.ProductName
+FROM Products p
+WHERE p.UnitPrice > (
+    SELECT AVG(UnitPrice)
+    FROM Products
+);
+
+--2.  Liệt kê các product có đơn giá mua lớn hơn đơn giá mua nhỏ nhất của tất 
+--cả các product.
+SELECT 
+	p.ProductID, 
+	p.ProductName
+FROM Products p
+WHERE p.UnitPrice > (
+    SELECT MIN(UnitPrice)
+    FROM Products
+);
+
+--3.  Liệt kê các product có đơn giá  bán  lớn hơn đơn giá  bán  trung bình của 
+--các  product.  Thông  tin  gồm  ProductID,  ProductName,  OrderID, 
+--Orderdate,  Unitprice .
+SELECT 
+	p.ProductID, 
+	p.ProductName, 
+	d.OrderID, 
+	o.OrderDate,
+	d.UnitPrice
+FROM Products p
+JOIN [Order Details] d ON d.ProductID = p.ProductID
+JOIN Orders o ON o.OrderID = d.OrderID
+WHERE d.UnitPrice > (
+    SELECT AVG(UnitPrice)
+    FROM [Order Details]
+);
+
+--4.  Liệt kê các  product có đơn giá  bán  lớn hơn  đơn giá  bán  trung bình của 
+--các product có ProductName bắt đầu là ‘N’.
+SELECT 
+	p.ProductID, 
+	p.ProductName, 
+	d.OrderID, 
+	o.OrderDate, 
+	d.UnitPrice
+FROM Products p
+JOIN [Order Details] d ON d.ProductID = p.ProductID
+JOIN Orders o ON o.OrderID = d.OrderID
+WHERE p.ProductName LIKE 'N%' AND d.UnitPrice > (
+    SELECT AVG(UnitPrice)
+    FROM [Order Details]
+);
+
+--5.  Cho biết  những sản phẩm có tên  bắt đầu bằng  ‘T’  và  có  đơn giá bán  lớn 
+--hơn  đơn giá bán của  (tất cả) những  sản phẩm có tên bắt đầu bằng chữ 
+--‘V’.
+SELECT 
+	p.ProductID, 
+	p.ProductName
+FROM Products p
+JOIN [Order Details] d ON d.ProductID = p.ProductID
+WHERE p.ProductName LIKE 'T%' AND d.UnitPrice > (
+    SELECT AVG(dd.UnitPrice)
+    FROM [Order Details] dd
+	JOIN Products pp ON pp.ProductID = dd.ProductID
+	WHERE pp.ProductName LIKE 'V%'
+);
+ 
+--6.  Cho biết sản phẩm nào có đơn giá bán cao nhất trong số những sản phẩm 
+--có đơn vị tính có chứa chữ ‘box’ .
+SELECT TOP 1 
+	p.ProductID, 
+	p.ProductName, 
+	d.UnitPrice
+FROM Products p
+JOIN [Order Details] d ON d.ProductID = p.ProductID
+WHERE p.QuantityPerUnit LIKE '%box%'
+ORDER BY d.UnitPrice DESC;
+
+--7.  Liệt kê các product  có tổng  số lượng bán  (Quantity)  trong năm 1998  lớn 
+--hơn tổng số lượng bán trong năm 1998 của mặt hàng có mã 71 
+WITH Sales1998 AS (
+    SELECT 
+        d.ProductID,
+        SUM(d.Quantity) AS TotalQuantity
+    FROM [Order Details] d
+    JOIN Orders o ON o.OrderID = d.OrderID
+    WHERE YEAR(o.OrderDate) = 1998
+    GROUP BY d.ProductID
+)
+SELECT p.ProductID, p.ProductName, s.TotalQuantity
+FROM Sales1998 s
+JOIN Products p ON p.ProductID = s.ProductID
+WHERE s.TotalQuantity > (
+    SELECT TotalQuantity
+    FROM Sales1998
+    WHERE ProductID = 71
+);
+
+--8.  Thực hiện :
+---  Thống kê  tổng số lượng bán  ứng với  mỗi  mặt hàng thuộc nhóm 
+--hàng  có  CategoryID  là  4.  Thông  tin  :  ProductID,  QuantityTotal 
+--(tập A) 
+SELECT
+	p.ProductId,
+	SUM(d.Quantity) AS QuantityTotal
+FROM Products p
+JOIN [Order Details] d ON d.ProductID = p.ProductID
+WHERE p.CategoryID = 4
+GROUP BY p.ProductID;
+
+---  Thống kê tổng số lượng bán  ứng với  mỗi mặt hàng thuộc nhóm 
+--hàng khác 4 . Thông tin : ProductID, QuantityTotal (tập B)
+SELECT
+	p.ProductId,
+	SUM(d.Quantity) AS QuantityTotal
+FROM Products p
+JOIN [Order Details] d ON d.ProductID = p.ProductID
+WHERE p.CategoryID != 4
+GROUP BY p.ProductID;
+
+---  Dựa vào 2 truy vấn trên : Liệt kê  danh sách các mặt hàng trong 
+--tập A có QuantityTotal lớn hơn tất cả QuantityTotal của tập B
+WITH A AS (
+	SELECT
+		p.ProductId,
+		SUM(d.Quantity) AS QuantityTotal
+	FROM Products p
+	JOIN [Order Details] d ON d.ProductID = p.ProductID
+	WHERE p.CategoryID = 4
+	GROUP BY p.ProductID
+), B AS (
+	SELECT
+		p.ProductId,
+		SUM(d.Quantity) AS QuantityTotal
+	FROM Products p
+	JOIN [Order Details] d ON d.ProductID = p.ProductID
+	WHERE p.CategoryID != 4
+	GROUP BY p.ProductID
+) SELECT *
+FROM A
+WHERE QuantityTotal > ALL (
+	SELECT QuantityTotal FROM B
+);
+
+--9.  Danh sách các Product  có tổng số lượng  bán  được lớn nhất trong năm 
+--1998
+--Lưu ý : Có nhiều phương án thực hiện các truy vấn sau (dùng JOIN hoặc 
+--subquery ). Hãy đưa ra phương án sử dụng subquery.
+WITH Products1998 AS (
+	SELECT
+		p.ProductId,
+		p.ProductName,
+		SUM(d.Quantity) AS Total
+	FROM Products p
+	JOIN [Order Details] d ON d.ProductID = p.ProductID
+	JOIN Orders o ON o.OrderID = d.OrderID
+	WHERE YEAR(o.OrderDate) = 1998
+	GROUP BY p.ProductID, p.ProductName
+) SELECT *
+FROM Products1998 p
+WHERE p.Total = (
+	SELECT MAX(Total)
+	FROM Products1998
+);
+
+--10.  Danh sách các products đã có khách hàng mua hàng (tức là ProductID có 
+--trong  [Order  Details]).  Thông  tin  bao  gồm  ProductID,  ProductName, 
+--Unitprice
+SELECT
+	p.ProductId,
+	p.ProductName,
+	p.UnitPrice
+FROM Products p
+WHERE p.ProductID IN (
+	SELECT d.ProductId
+	FROM [Order Details] d
+)
+
+--11.  Danh sách các hóa đơn của những  khách hàng  ở thành phố LonDon và 
+--Madrid.
+SELECT
+	o.*
+FROM Orders o
+WHERE o.CustomerID IN (
+	SELECT c.CustomerID
+	FROM Customers c
+	WHERE c.City IN ('LonDon', 'Madrid')
+);
+
+--12.  Liệt kê các sản phẩm có trên 20 đơn hàng trong  quí 3  năm 1998, thông 
+--tin gồm ProductID, ProductName.
+SELECT
+    p.ProductID,
+    p.ProductName
+FROM Products p
+WHERE p.ProductID IN (
+    SELECT d.ProductID
+    FROM Orders o
+    JOIN [Order Details] d ON d.OrderID = o.OrderID
+    WHERE YEAR(o.OrderDate) = 1998 AND MONTH(o.OrderDate) IN (7, 8, 9)
+    GROUP BY d.ProductID
+    HAVING COUNT(DISTINCT o.OrderID) > 20
+);
+
+--13.  Liệt kê danh sách các sản phẩm chưa bán được trong tháng 6 năm 1996
+SELECT
+	p.ProductId,
+	p.ProductName
+FROM Products p
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM Orders o
+    JOIN [Order Details] d ON d.OrderID = o.OrderID
+	WHERE d.ProductID = p.ProductID AND YEAR(o.OrderDate) = 1996 AND MONTH(o.OrderDate) = 6
+);
+
+--14.  Liệt kê danh sách các Employes không lập hóa đơn vào ngày hôm nay
+SELECT
+	e.EmployeeID,
+	e.FirstName + ' ' + e.LastName AS EmployeeName
+FROM Employees e
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM Orders o
+	WHERE o.EmployeeID = e.EmployeeID AND o.OrderDate = GETDATE()
+);
+
+--15.  Liệt kê danh sách các Customers chưa mua hàng trong năm 1997
+SELECT
+	c.CustomerID,
+	c.CompanyName,
+	c.ContactName
+FROM Customers c
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM Orders o
+	WHERE o.CustomerID = c.CustomerID AND YEAR(o.OrderDate) = 1997
+);
+
+--16.  Tìm tất cả các Customers mua các sản phẩm có tên bắt đầu bằng chữ T 
+--trong tháng 7 năm 1997
+SELECT
+    c.CustomerID,
+    c.CompanyName,
+    c.ContactName
+FROM Customers c
+WHERE EXISTS (
+    SELECT 1
+    FROM Orders o
+    JOIN [Order Details] d ON d.OrderID = o.OrderID
+    JOIN Products p ON p.ProductID = d.ProductID
+    WHERE o.CustomerID = c.CustomerID
+      AND YEAR(o.OrderDate) = 1997
+      AND MONTH(o.OrderDate) = 7
+      AND p.ProductName LIKE 'T%'
+);
+
+--17.  Liệt kê danh sách các khách hàng mua các hóa đơn mà các hóa đơn này 
+--chỉ mua những sản phẩm có mã >=3 
+
+--18.  Tìm các Customer chưa từng lập  hóa đơn (viết bằng ba cách: dùng NOT 
+--EXISTS, dùng LEFT JOIN, dùng NOT IN )
+
+--19.  Bạn hãy mô tả kết quả của các câu truy vấn sau ?
+--Select ProductID, ProductName, UnitPrice  From [Products]
+--Where Unitprice>ALL (Select Unitprice from [Products] where 
+--ProductName like ‘N%’)
+--Select ProductId, ProductName, UnitPrice From [Products]
+--Where Unitprice>ANY (Select Unitprice from [Products] where 
+--ProductName like ‘N%’)
+--Select ProductId, ProductName, UnitPrice from [Products]
+--Where Unitprice=ANY (Select Unitprice from [Products] where 
+--Trường ĐH Công Nghiệp TP.HCM    Bài Tập Thực Hành Môn Hệ Cơ Sở Dữ Liệu
+--Khoa Công Nghệ Thông Tin    50/57
+--ProductName like ‘N%’)
+--Select ProductId, ProductName, UnitPrice from [Products]
+--Where ProductName like ‘N%’ and 
+--Unitprice>=ALL (Select Unitprice from [Products] where
+--ProductName like ‘N%’)
