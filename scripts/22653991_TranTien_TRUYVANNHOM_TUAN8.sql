@@ -1,72 +1,15 @@
-﻿-----1 CHO BIET TONG TIEN CUA TUNG HOA DON
+﻿--MASV: 22653991
+--HỌ TÊN: Tran Tien
+
 use Northwind
-SELECT [OrderID], TONGTIEN = SUM([UnitPrice]*[Quantity])
-FROM [dbo].[Order Details]
-GROUP BY [OrderID]
---
---
-SELECT [OrderID],[Quantity], [UnitPrice],TONGTIEN = SUM([UnitPrice]*[Quantity])
-FROM [dbo].[Order Details]
-GROUP BY [OrderID],[Quantity], [UnitPrice] ---SAI
---
-SELECT O.[OrderID], [CustomerID],[EmployeeID],[OrderDate],TONGTIEN = SUM([UnitPrice]*[Quantity])
-FROM [dbo].[Order Details] OD JOIN ORDERS O ON OD.OrderID =O.OrderID
-GROUP BY O.[OrderID], [CustomerID],[EmployeeID],[OrderDate]
---CHO BIET SO LUONG TRUNG BINH BAN DUOC CUA MOI SAN PHAM
-SELECT P.[ProductID],[ProductName],[SupplierID],[CategoryID], SLTB =AVG([Quantity])
-FROM [dbo].[Products] P JOIN [dbo].[Order Details] OD ON P.ProductID=OD.ProductID
-GROUP BY P.[ProductID],[ProductName],[SupplierID],[CategoryID]
 
-----CHO BIET SO LUONG  BAN DUOC LỚN NHẤT CUA MOI SAN PHAM
-SELECT P.[ProductID],[ProductName],[SupplierID],[CategoryID], SLLN =MAX([Quantity])
-FROM [dbo].[Products] P JOIN [dbo].[Order Details] OD ON P.ProductID=OD.ProductID
-GROUP BY P.[ProductID],[ProductName],[SupplierID],[CategoryID]
-
-------CHO BIET SO LUONG  BAN DUOC NHỎ NHẤT CUA MOI SAN PHAM
-SELECT P.[ProductID],[ProductName],[SupplierID],[CategoryID], SLNN =MIN([Quantity])
-FROM [dbo].[Products] P JOIN [dbo].[Order Details] OD ON P.ProductID=OD.ProductID
-GROUP BY P.[ProductID],[ProductName],[SupplierID],[CategoryID]
-----CHO BIET SO LẦN BAN DUOC  CUA MOI SAN PHAM
-SELECT P.[ProductID],[ProductName],[SupplierID],[CategoryID], SLBD =COUNT([Quantity])
-FROM [dbo].[Products] P JOIN [dbo].[Order Details] OD ON P.ProductID=OD.ProductID
-GROUP BY P.[ProductID],[ProductName],[SupplierID],[CategoryID]
---CHO BIET TONG SL, TRUNG BINH , GIA TRI LON NHAT, GIA TRI NHO NHAT, BAN ĐƯỢC BAO NHIEU LAN CUA MOI SAN PHAM
-SELECT P.[ProductID],[ProductName], TONGSL =SUM([Quantity]), TB= AVG([Quantity]),SLLN=MAX(QUANTITY),SLNN=MIN(QUANTITY), SLBANDUOC=COUNT(OD.PRODUCTID)
-FROM [dbo].[Order Details] OD JOIN [dbo].[Products] P ON P.ProductID =OD.ProductID
-GROUP BY P.[ProductID],[ProductName]
-ORDER BY  P.[ProductID]
----CHO BIET TONG TIEN CUA CAC HOA DON DUOC LAP TRONG THANG 9
-SELECT O.[OrderID], [CustomerID],[EmployeeID],[OrderDate],TONGTIEN = SUM([UnitPrice]*[Quantity])
-FROM [dbo].[Order Details] OD JOIN ORDERS O ON OD.OrderID =O.OrderID
-WHERE MONTH(ORDERDATE)=9
-GROUP BY O.[OrderID], [CustomerID],[EmployeeID],[OrderDate]
-ORDER BY O.OrderID
---CHO BIET HOA DON NAO CO TONG TIEN >3000
-SELECT O.[OrderID], [CustomerID],[EmployeeID],[OrderDate],TONGTIEN = SUM([UnitPrice]*[Quantity])
-FROM [dbo].[Order Details] OD JOIN ORDERS O ON OD.OrderID =O.OrderID
-GROUP BY O.[OrderID], [CustomerID],[EmployeeID],[OrderDate]
-HAVING SUM([UnitPrice]*[Quantity])>3000
---CHO BIET HOA DON NAO CO THANH TIEN LON NHAT 
-SELECT TOP 1 WITH TIES O.[OrderID], [CustomerID],[EmployeeID],[OrderDate],THANHTIEN=[UnitPrice]*[Quantity]
-FROM [dbo].[Order Details] OD JOIN ORDERS O ON OD.OrderID =O.OrderID
-ORDER BY THANHTIEN DESC
-----CHO BIET THANH TIEN LON NHAT CUA TUNG HOA DON
-SELECT  O.[OrderID], [CustomerID],[EmployeeID],[OrderDate],TONGTIEN = MAX([UnitPrice]*[Quantity])
-FROM [dbo].[Order Details] OD JOIN ORDERS O ON OD.OrderID =O.OrderID
-GROUP BY O.[OrderID], [CustomerID],[EmployeeID],[OrderDate]
-ORDER BY TONGTIEN DESC
---CHO BIET HOA DON NAO CO TONG TIEN LON NHAT
-SELECT TOP 1 WITH TIES O.[OrderID], [CustomerID],[EmployeeID],[OrderDate],TONGTIEN = SUM([UnitPrice]*[Quantity])
-FROM [dbo].[Order Details] OD JOIN ORDERS O ON OD.OrderID =O.OrderID
-GROUP BY O.[OrderID], [CustomerID],[EmployeeID],[OrderDate]
-ORDER BY TONGTIEN DESC
 ----------THỰC HÀNH
 --BÀI TẬP 3: LỆNH SELECT – TRUY VẤN GOM NHÓM
 --1.  Liệt kê danh sách các orders ứng với tổng tiền của từng hóa đơn. Thông tin 
 --bao gồm OrderID, OrderDate, Total. Trong đó Total là Sum của Quantity * 
 --Unitprice, kết nhóm theo OrderID.
 SELECT 
-  o.OrderID 
+  o.OrderID,
   o.OrderDate,
   SUM(d.Quantity * d.UnitPrice) AS Total
 FROM Orders o
@@ -83,6 +26,7 @@ SELECT
 FROM Orders o
 JOIN [Order Details] d ON o.OrderID = d.OrderID
 WHERE o.ShipCity = 'Madrid'
+GROUP BY o.OrderID, o.OrderDate;
 
 --3.  Viết các truy vấn để thống kê số lượng các hóa đơn : 
 ---  Trong mỗi năm. Thông tin hiển thị : Year , CoutOfOrders ?
@@ -151,8 +95,6 @@ ORDER BY Month_Salary, Salary DESC;
 --7.  Tính tổng số hóa đơn và tổng tiền các hóa đơn  của mỗi nhân viên đã bán 
 --trong  tháng  3/1997,  có  tổng  tiền  >4000.  Thông  tin  gồm  EmployeeID, 
 --LastName, FirstName, CountofOrder, Total. 
---Trường ĐH Công Nghiệp TP.HCM    Bài Tập Thực Hành Môn Hệ Cơ Sở Dữ Liệu
---Khoa Công Nghệ Thông Tin    48/57
 SELECT 
   e.EmployeeID, 
   e.LastName, 
@@ -174,13 +116,16 @@ ORDER BY Total DESC;
 SELECT
   c.CustomerID,
   c.CompanyName,
+  c.Address,
+  c.City,
+  c.Phone,
   COUNT(DISTINCT o.OrderID) AS TotalOrders,
   SUM(d.Quantity * d.UnitPrice) AS TotalAmount
 FROM Customers c
 JOIN Orders o ON c.CustomerID = o.CustomerID
 JOIN [Order Details] d ON o.OrderID = d.OrderID
 WHERE o.OrderDate >= '1996-12-31' AND o.OrderDate <= '1998-01-01'
-GROUP BY c.CustomerID, c.CompanyName
+GROUP BY c.CustomerID, c.CompanyName, c.Address, c.City, c.Phone
 HAVING SUM(d.Quantity * d.UnitPrice) > 20000
 ORDER BY c.CustomerID, TotalAmount DESC;
 
@@ -191,7 +136,7 @@ ORDER BY c.CustomerID, TotalAmount DESC;
 SELECT
   c.CustomerID,
   c.CompanyName,
-  MONTH(o.OrderDate) + '-' + CAST(YEAR(o.OrderDate) AS VARCHAR(4)) AS Month_Year,
+  CAST(MONTH(o.OrderDate) AS VARCHAR(2)) + '-' + CAST(YEAR(o.OrderDate) AS VARCHAR(4)) AS Month_Year,
   SUM(d.Quantity * d.UnitPrice) AS Total
 FROM Customers c
 JOIN Orders o ON c.CustomerID = o.CustomerID
