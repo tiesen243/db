@@ -484,23 +484,108 @@ WHERE EXISTS (
 
 --17.  Liệt kê danh sách các khách hàng mua các hóa đơn mà các hóa đơn này 
 --chỉ mua những sản phẩm có mã >=3 
+SELECT
+    c.CustomerID,
+    c.CompanyName,
+    c.ContactName
+FROM Customers c
+WHERE EXISTS (
+    SELECT 1
+    FROM Orders o
+    WHERE o.CustomerID = c.CustomerID
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM Orders o
+    JOIN [Order Details] d ON d.OrderID = o.OrderID
+    WHERE o.CustomerID = c.CustomerID
+      AND d.ProductID < 3
+);
 
 --18.  Tìm các Customer chưa từng lập  hóa đơn (viết bằng ba cách: dùng NOT 
 --EXISTS, dùng LEFT JOIN, dùng NOT IN )
 
+--EXISTS
+SELECT
+    c.CustomerID,
+    c.CompanyName,
+    c.ContactName
+FROM Customers c
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM Orders o
+    WHERE o.CustomerID = c.CustomerID
+);
+
+--LEFT JOIN
+SELECT
+    c.CustomerID,
+    c.CompanyName,
+    c.ContactName
+FROM Customers c
+LEFT JOIN Orders o
+    ON o.CustomerID = c.CustomerID
+WHERE o.CustomerID IS NULL;
+
+--NOT IN
+SELECT
+    c.CustomerID,
+    c.CompanyName,
+    c.ContactName
+FROM Customers c
+WHERE c.CustomerID NOT IN (
+    SELECT o.CustomerID
+    FROM Orders o
+);
+
 --19.  Bạn hãy mô tả kết quả của các câu truy vấn sau ?
+
 --Select ProductID, ProductName, UnitPrice  From [Products]
 --Where Unitprice>ALL (Select Unitprice from [Products] where 
 --ProductName like ‘N%’)
+SELECT ProductID, ProductName, UnitPrice
+FROM Products
+WHERE UnitPrice > ALL (
+    SELECT UnitPrice
+    FROM Products
+    WHERE ProductName LIKE 'N%'
+);
+--Các sản phẩm có giá lớn hơn MAX(UnitPrice của nhóm N%)
+
 --Select ProductId, ProductName, UnitPrice From [Products]
 --Where Unitprice>ANY (Select Unitprice from [Products] where 
 --ProductName like ‘N%’)
+SELECT ProductID, ProductName, UnitPrice
+FROM Products
+WHERE UnitPrice > ANY (
+    SELECT UnitPrice
+    FROM Products
+    WHERE ProductName LIKE 'N%'
+);
+--Các sản phẩm có giá lớn hơn giá thấp nhất của nhóm N%
+
 --Select ProductId, ProductName, UnitPrice from [Products]
 --Where Unitprice=ANY (Select Unitprice from [Products] where 
---Trường ĐH Công Nghiệp TP.HCM    Bài Tập Thực Hành Môn Hệ Cơ Sở Dữ Liệu
---Khoa Công Nghệ Thông Tin    50/57
 --ProductName like ‘N%’)
+SELECT ProductID, ProductName, UnitPrice
+FROM Products
+WHERE UnitPrice = ANY (
+    SELECT UnitPrice
+    FROM Products
+    WHERE ProductName LIKE 'N%'
+);
+--Các sản phẩm có giá trùng với một trong các UnitPrice của nhóm N%
+
 --Select ProductId, ProductName, UnitPrice from [Products]
 --Where ProductName like ‘N%’ and 
 --Unitprice>=ALL (Select Unitprice from [Products] where
 --ProductName like ‘N%’)
+SELECT ProductID, ProductName, UnitPrice
+FROM Products
+WHERE ProductName LIKE 'N%'
+  AND UnitPrice >= ALL (
+      SELECT UnitPrice
+      FROM Products
+      WHERE ProductName LIKE 'N%'
+  );
+--Các sản phẩm có tên bắt đầu N% và có UnitPrice cao nhất trong nhóm N%
